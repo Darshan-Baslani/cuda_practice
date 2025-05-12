@@ -40,6 +40,10 @@ int main() {
     cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
 
     // calling kernel
+    sum_vector <<< ceil(N/256.0), 256 >>> (d_A, d_B, d_C, N);
+
+    // freeing device memory
+    cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);
 
     return 0;
 }
