@@ -3,6 +3,15 @@
 #include <cuda_runtime.h>
 
 #define N 1024
+#define CUDA_CHECK(x) \
+    do { \
+        cudaError_t err = x; \
+        if (err != cudaSuccess) { \
+            fprintf(stderr, "CUDA error at %s:%d: %s\n", \
+                    __FILE__, __LINE__, cudaGetErrorString(err)); \
+            exit(EXIT_FAILURE); \
+        } \
+    } while (0)
 
 void init_vector(float *vec, int n) {
   for(int i=0; i<n; i++) {
@@ -27,10 +36,9 @@ int main() {
     h_B = (float*)malloc(size);
 
     // alloting memory in GPU
-    cudaMalloc(&d_A, size);
-    cudaMalloc(&d_B, size);
-    cudaMalloc(&d_C, size);
-
+    CUDA_CHECK(cudaMalloc(&d_B, size));
+    CUDA_CHECK(cudaMalloc(&d_C, size));
+    CUDA_CHECK(cudaMalloc(&d_A, size));
     // generating random values in vector
     init_vector(h_A, N);
     init_vector(h_B, N);
@@ -41,6 +49,8 @@ int main() {
 
     // calling kernel
     sum_vector <<< ceil(N/256.0), 256 >>> (d_A, d_B, d_C, N);
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
 
     // freeing device memory
     cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);
