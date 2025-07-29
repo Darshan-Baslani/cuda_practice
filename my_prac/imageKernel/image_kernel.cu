@@ -17,12 +17,12 @@ __global__ void rgbToGrayscale(unsigned char *pin, unsigned char *pout,
   }
 }
 
-void callRgbToGrayscaleKernel(unsigned char *pin, unsigned char *pout, int width,
-                              int height, int channels) {
+void callRgbToGrayscaleKernel(unsigned char *pin, unsigned char *pout,
+                              int width, int height, int channels) {
   dim3 threadsPerBlock(16, 16);
   dim3 numBlocks((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
   rgbToGrayscale<<<numBlocks, threadsPerBlock>>>(pin, pout, width, height,
-                                                  channels);
+                                                 channels);
 }
