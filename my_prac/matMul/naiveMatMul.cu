@@ -87,6 +87,18 @@ __global__ void correctColMatMul(float *M, float *N, float *O, int width) {
   }
 }
 
+__global__ void vecMatMul(float *B, float *c, float *A, int size) {
+  int row = blockDim.y * blockIdx.y + threadIdx.y;
+
+  if (row < size) {
+    float val = 0;
+    for (int k = 0; k < size; k++) {
+      val += B[row * size + k] * c[k];
+    }
+    A[row] = val;
+  }
+}
+
 __global__ void expMatMul(float *M, float *N, float *O, int width) {
   int col = blockDim.x * blockIdx.x + threadIdx.x;
   int row = blockDim.y * blockIdx.y + threadIdx.y;
@@ -105,6 +117,27 @@ void initializeMatrices(float *h_M, float *h_N, int width) {
     h_M[i] = static_cast<float>(i % 10);
     h_N[i] = static_cast<float>(i % 7);
   }
+}
+
+void vecMatMul(float *h_B, float *h_c, float *h_A, int size) {
+  float *d_B, *d_c, *d_A;
+  const int THREADS_PER_BLOCK = 256;
+  dim3 dimBlock(1, THREADS_PER_BLOCK, 1);
+  const int BLOCKS_PER_GRID =
+      (size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+  dim3 dimGrid(1, BLOCKS_PER_GRID, 1);
+
+  CUDA_CHECK(cudaMalloc(&d_B, (size * size) * sizeof(float)))
+  CUDA_CHECK(cudaMalloc(&d_c, size * sizeof(float)))
+
+  CUDA_CHECK(cudaMemcpy(d_B, h_B, (size * size) * sizeof(float),
+                        cudaMemcpyHostToDevice))
+  CUDA_CHECK(cudaMemcpy(d_B, h_B, size * sizeof(float), cudaMemcpyHostToDevice))
+
+  vecMatMul<<<dimGrid, dimBlock>>>(d_B, d_c, d_A, size);
+
+  CUDA_CHECK(cudaDeviceSynchronize());
+  CUDA_CHECK(cudaGetLastError());
 }
 
 bool compareMatrices(const float *A, const float *B, int width,
