@@ -73,6 +73,20 @@ __global__ void correctRowMatMul(float *M, float *N, float *O, int width) {
   }
 }
 
+__global__ void correctColMatMul(float *M, float *N, float *O, int width) {
+  int col = blockDim.x * blockIdx.x + threadIdx.x;
+
+  if (col < width) {
+    for (int row = 0; row < width; ++row) {
+      float val = 0;
+      for (int k = 0; k < width; ++k) {
+        val += M[row * width + k] * N[k * width + col];
+      }
+      O[row * width + col] = val;
+    }
+  }
+}
+
 __global__ void expMatMul(float *M, float *N, float *O, int width) {
   int col = blockDim.x * blockIdx.x + threadIdx.x;
   int row = blockDim.y * blockIdx.y + threadIdx.y;
@@ -127,15 +141,21 @@ int main() {
   CUDA_CHECK(cudaMemcpy(d_N, h_N, BYTES, cudaMemcpyHostToDevice));
 
   const int THREADS_PER_BLOCK = 256;
-  dim3 dimBlock(1, THREADS_PER_BLOCK);
+  dim3 dimBlockRow(1, THREADS_PER_BLOCK);
+  dim3 dimBlockCol(THREADS_PER_BLOCK, 1);
 
   const int BLOCKS_PER_GRID =
       (WIDTH + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-  dim3 dimGrid(1, BLOCKS_PER_GRID);
+  dim3 dimGridRow(1, BLOCKS_PER_GRID);
+  dim3 dimGridCol(BLOCKS_PER_GRID, 1);
 
-  std::cout << "Launching kernel with grid size (" << dimGrid.x << ", "
-            << dimGrid.y << ") and block size (" << dimBlock.x << ", "
-            << dimBlock.y << ")" << std::endl;
+  std::cout << "Launching Row kernel with grid size (" << dimGridRow.x << ", "
+            << dimGridRow.y << ") and block size (" << dimBlockRow.x << ", "
+            << dimBlockRow.y << ")" << std::endl;
+
+  std::cout << "Launching Col kernel with grid size (" << dimGridCol.x << ", "
+            << dimGridCol.y << ") and block size (" << dimBlockCol.x << ", "
+            << dimBlockCol.y << ")" << std::endl;
 
   cudaEvent_t start, stop;
   CUDA_CHECK(cudaEventCreate(&start));
@@ -144,7 +164,7 @@ int main() {
   // Run rowMatMul
   std::cout << "Running rowMatMul..." << std::endl;
   CUDA_CHECK(cudaEventRecord(start));
-  rowMatMul<<<dimGrid, dimBlock>>>(d_M, d_N, d_O_row, WIDTH);
+  correctColMatMul<<<dimGridCol, dimBlockCol>>>(d_M, d_N, d_O_row, WIDTH);
   CUDA_CHECK(cudaEventRecord(stop));
   CUDA_CHECK(cudaDeviceSynchronize());
   CUDA_CHECK(cudaGetLastError());
@@ -158,7 +178,7 @@ int main() {
   // Run correctRowMatMul
   std::cout << "Running correctRowMatMul..." << std::endl;
   CUDA_CHECK(cudaEventRecord(start));
-  correctRowMatMul<<<dimGrid, dimBlock>>>(d_M, d_N, d_O_correct, WIDTH);
+  correctRowMatMul<<<dimGridRow, dimBlockRow>>>(d_M, d_N, d_O_correct, WIDTH);
   CUDA_CHECK(cudaEventRecord(stop));
   CUDA_CHECK(cudaDeviceSynchronize());
 
