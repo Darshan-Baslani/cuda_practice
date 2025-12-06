@@ -58,13 +58,12 @@ __global__ void rowMatMul(float *M, float *N, float *O, int width) {
   }
 }
 
-cuda->object = assembler object->machine code(binary) =
-    compiler programmer -> cuda->nvcc->object(.out)->binary->cpu / gpu / hdd /
-    ssd
+// cuda->object = assembler object->machine code(binary) =
+//     compiler programmer -> cuda->nvcc->object(.out)->binary->cpu / gpu / hdd / ssd
 
-        // correct approach for ch-3 1.1
-        __global__ void correctRowMatMul(float *M, float *N, float *O,
-                                         int width) {
+// correct approach for ch-3 1.1
+__global__ void correctRowMatMul(float *M, float *N, float *O,
+                                  int width) {
   int row = blockDim.y * blockIdx.y + threadIdx.y;
 
   if (row < width) {
