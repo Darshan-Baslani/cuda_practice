@@ -5,9 +5,9 @@
 #include <cmath>
 
 // #define WIDTH 6144
-#define Mrow 10240
-#define McolNrow 6144
-#define Ncol 1024
+#define Mrow 1024
+#define McolNrow 512
+#define Ncol 256
 #define MATRIX_SIZE (WIDTH*WIDTH)
 #define TILE_WIDTH 32
 

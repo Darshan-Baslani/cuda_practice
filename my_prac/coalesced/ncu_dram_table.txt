@@ -1,0 +1,39 @@
+==PROF== Connected to process 33451 (/mnt/Code/cuda_practice/my_prac/coalesced/coalesced)
+launching coalesced kernel
+==PROF== Profiling "coalesced_access" - 0: 0%....50%....100% - 3 passes
+kernel exectuted successfully
+launching uncoalesced kernel
+==PROF== Profiling "uncoalesced_access" - 1: 0%....50%....100% - 3 passes
+kernel exectuted successfully
+==PROF== Disconnected from process 33451
+[33451] coalesced@127.0.0.1
+  coalesced_access(float *, float *, int) (78125, 1, 1)x(128, 1, 1), Context 1, Stream 7, Device 0, CC 7.5
+    Section: Command line profiler metrics
+    --------------------------------------------------- ----------- ------------
+    Metric Name                                         Metric Unit Metric Value
+    --------------------------------------------------- ----------- ------------
+    dram__bytes_read.sum                                      Mbyte        40.06
+    dram__bytes_read.sum.pct_of_peak_sustained_elapsed            %        43.11
+    dram__bytes_read.sum.per_second                         Gbyte/s        48.23
+    dram__bytes_write.sum                                     Mbyte        39.89
+    dram__bytes_write.sum.pct_of_peak_sustained_elapsed           %        42.93
+    dram__bytes_write.sum.per_second                        Gbyte/s        48.03
+    dram__sectors_read.sum                                   sector    1,251,753
+    dram__sectors_write.sum                                  sector    1,246,680
+    --------------------------------------------------- ----------- ------------
+
+  uncoalesced_access(float *, float *, int) (78125, 1, 1)x(128, 1, 1), Context 1, Stream 7, Device 0, CC 7.5
+    Section: Command line profiler metrics
+    --------------------------------------------------- ----------- ------------
+    Metric Name                                         Metric Unit Metric Value
+    --------------------------------------------------- ----------- ------------
+    dram__bytes_read.sum                                      Mbyte       321.93
+    dram__bytes_read.sum.pct_of_peak_sustained_elapsed            %        77.74
+    dram__bytes_read.sum.per_second                         Gbyte/s        87.14
+    dram__bytes_write.sum                                     Mbyte        40.34
+    dram__bytes_write.sum.pct_of_peak_sustained_elapsed           %         9.74
+    dram__bytes_write.sum.per_second                        Gbyte/s        10.92
+    dram__sectors_read.sum                                   sector   10,060,301
+    dram__sectors_write.sum                                  sector    1,260,509
+    --------------------------------------------------- ----------- ------------
+
