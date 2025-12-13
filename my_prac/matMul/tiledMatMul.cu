@@ -11,7 +11,7 @@
 #define MATRIX_SIZE (WIDTH*WIDTH)
 #define TILE_WIDTH 32
 
-#define CUDA_CHECK(res) {                                                      \
+#define CUDA_CHECK(res) {                                                      \;
     gpuAssert((res), __FILE__, __LINE__);                                      \
   }
 inline void gpuAssert(cudaError_t code, const char *file, int line,
