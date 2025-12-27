@@ -1,9 +1,7 @@
-#include <__clang_cuda_builtin_vars.h>
-#include <algorithm>
-#include <filesystem>
-#include <iostream>
 #include <cuda_runtime.h>
+#include <cuda.h>
 #include <math.h>
+#include <torch/extension.h>
 
 template <typename T>
 __global__ void safe_softmax(T *x, T *y, int M, int N) {
@@ -90,7 +88,16 @@ __device__ SoftmaxState warpReduceSoftmax(SoftmaxState val) {
   return val;
 }
 
-__device__ void reduceSoftmaxKernel(float *input, float *output, int N) {
+template <typename T>
+__global__ void reduceSoftmaxKernel(T *input, T *output, int M, int N) {
+  int row = blockIdx.x;
+
+  if (row >= M) return;
+
+  // adjust pointers to point to the start of the specific row
+  T *row_input = input + row*N;
+  T *row_output = output + row*N;
+
   // this will store warp-level states 
   // assuming max 32 warps (1024 threads)
   __shared__ float shared_m[32];
@@ -106,7 +113,7 @@ __device__ void reduceSoftmaxKernel(float *input, float *output, int N) {
   // strided loop
   // if N > blockDim.x 
   for (int i = tid; i < N; i+=blockDim.x) {
-    float val = input[i];
+    float val = static_cast<float>(row_input[i]);
 
     // standard online softmax updates 
     float new_m = fmaxf(localState.m, val);
@@ -144,7 +151,78 @@ __device__ void reduceSoftmaxKernel(float *input, float *output, int N) {
 
   // final normed softmax pass
   for (int i = tid; i < N; i += blockDim.x) {
-    float val = input[i];
-    output[i] = __expf(val - total_m) / total_d;
+    float val = static_cast<float>(row_input[i]);
+    row_output[i] = static_cast<T>(__expf(val - total_m) / total_d);
   }
+}
+
+torch::Tensor dispatch_safe_softmax(torch::Tensor input) {
+  TORCH_CHECK(input.is_cuda(), "Input must be on CUDA");
+  input = input.contiguous();
+  int M = input.size(0);
+  int N = input.size(1);
+  auto output = torch::empty_like(input);
+
+  // Naive configuration: 1 thread per row
+  int threads = 128;
+  int blocks = (M + threads - 1) / threads;
+
+ AT_DISPATCH_FLOATING_TYPES_AND_HALF(input.scalar_type(), "safe_softmax", ([&] {
+      safe_softmax<scalar_t><<<blocks, threads>>>(
+          input.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), M, N);
+    }));
+  return output;
+}
+
+torch::Tensor dispatch_online_softmax(torch::Tensor input) {
+  TORCH_CHECK(input.is_cuda(), "Input must be on CUDA");
+  input = input.contiguous();
+  int M = input.size(0);
+  int N = input.size(1);
+  auto output = torch::empty_like(input);
+
+  // Naive configuration: 1 thread per row
+  int threads = 128;
+  int blocks = (M + threads - 1) / threads;
+
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(input.scalar_type(), "online_softmax", ([&] {
+    online_softmax<scalar_t><<<blocks, threads>>>(
+        input.data_ptr<scalar_t>(), output.data_ptr<scalar_t>(), M, N);
+  }));
+  return output;
+}
+
+torch::Tensor dispatch_reduce_softmax(torch::Tensor input) {
+  // ensure inputs are on the GPU
+  TORCH_CHECK(input.is_cuda(), "Input tensor must be on CUDA");
+  
+  // ensure the memory is contiguous (Row-Major)
+  input = input.contiguous();
+
+  int M = input.size(0);
+  int N = input.size(1);
+  
+  auto output = torch::empty_like(input);
+
+  // Kernel Launch Configuration
+  // 1 Block per Row, 1024 Threads per Block
+  dim3 grid(M);
+  dim3 block(1024); 
+
+  // The Magic Macro: Automatically handles fp32, fp16, bf16
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(input.scalar_type(), "reduceSoftmaxKernel", ([&] {
+    reduceSoftmaxKernel<scalar_t><<<grid, block>>>(
+        input.data_ptr<scalar_t>(),
+        output.data_ptr<scalar_t>(),
+        M,
+        N);
+  }));
+
+  return output;
+}
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+  m.def("safe_softmax", &dispatch_safe_softmax, "Naive 3-pass Softmax");
+  m.def("online_softmax", &dispatch_online_softmax, "Online 2-pass Softmax");
+  m.def("reduce_softmax", &dispatch_reduce_softmax, "Optimized Warp Reduction Softmax");
 }
