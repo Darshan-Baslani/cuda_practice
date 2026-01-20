@@ -1,3 +1,4 @@
+#include <__clang_cuda_builtin_vars.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda_runtime.h>
@@ -23,6 +24,11 @@ __global__ void sum_vector(float *d_a, float *d_b, float *d_c, int n){
     int i = threadIdx.x + blockDim.x * blockIdx.x;
     if(i < n)
         d_c[i] = d_a[i] + d_b[i];
+}
+
+__global__ void sum_vector_easy(float *d_a, float *d_b, float *d_c){
+    int i = threadIdx.x;
+    d_c[i] = d_a[i] + d_b[i];
 }
 
 int main() {
