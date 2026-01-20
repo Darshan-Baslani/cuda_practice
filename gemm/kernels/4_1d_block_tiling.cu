@@ -1,6 +1,5 @@
 #pragma once
 
-#include <__clang_cuda_builtin_vars.h>
 #include <cassert>
 #include <cuda_runtime.h>
 
@@ -38,7 +37,7 @@ __global__ void sgemm_1d_block_tiling(int M, int N, int K,
 
     float threadResults[TM] = {0.0};
 
-    for (int bkIdx{0}; bkIdx<K; bkIdx++) {
+    for (int bkIdx{0}; bkIdx<K; bkIdx+=BK){
         As[innerRowA*BK + innerColA] = A[innerColA*K + innerColA];
         Bs[innerRowB*BN + innerColB] = B[innerColB*N + innerColB];
         __syncthreads();
