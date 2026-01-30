@@ -79,15 +79,14 @@ __global__ void __launch_bounds__((BM*BN) / (TM*TN), 1) sgemm_2d_block_tiling(
             }
         }
         __syncthreads();
-
-        // writing the result
-        for (int resIdxM{0}; resIdxM<TM; resIdxM++) {
-            for (int resIdxN{0}; resIdxN<TN; resIdxN++) {
-                C[(threadRow*TM + resIdxM)*N + threadCol*TN + resIdxN] = 
-                    alpha * threadResults[resIdxM*TN + resIdxN] +
-                    beta  * C[(threadRow*TM + resIdxM)*N + threadCol*TN + resIdxN];
-            }
-        }
- 
     }
+    // writing the result
+    for (int resIdxM{0}; resIdxM<TM; resIdxM++) {
+        for (int resIdxN{0}; resIdxN<TN; resIdxN++) {
+            C[(threadRow*TM + resIdxM)*N + threadCol*TN + resIdxN] = 
+                alpha * threadResults[resIdxM*TN + resIdxN] +
+                beta  * C[(threadRow*TM + resIdxM)*N + threadCol*TN + resIdxN];
+        }
+    }
+
 }
