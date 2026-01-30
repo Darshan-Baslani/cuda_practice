@@ -2,3 +2,6 @@ softmax/softmax_cpp.egg-info/
 softmax/build
 softmax/softmax_bench.ncu-rep
 *.ncu-rep
+
+gemm/build/
+gemm/.cache/
