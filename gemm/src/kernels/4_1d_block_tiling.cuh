@@ -38,8 +38,8 @@ __global__ void sgemm_1d_block_tiling(int M, int N, int K,
     float threadResults[TM] = {0.0};
 
     for (int bkIdx{0}; bkIdx<K; bkIdx+=BK){
-        As[innerRowA*BK + innerColA] = A[innerColA*K + innerColA];
-        Bs[innerRowB*BN + innerColB] = B[innerColB*N + innerColB];
+        As[innerRowA*BK + innerColA] = A[innerRowA*K + innerColA];
+        Bs[innerRowB*BN + innerColB] = B[innerRowB*N + innerColB];
         __syncthreads();
 
         A += BK;
