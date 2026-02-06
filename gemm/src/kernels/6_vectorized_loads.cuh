@@ -78,8 +78,9 @@ __global__ void __launch_bounds__((BM*BN) / (TM*TN), 1) sgemm_vectorized_loads(
             }
         }
         __syncthreads();
+    }
 
-        // writing the result
+    // writing the result
         for (int resIdxM{0}; resIdxM<TM; resIdxM++) {
             for (int resIdxN{0}; resIdxN<TN; resIdxN+=4) {
                 float4 tmp = reinterpret_cast<float4 *>(
@@ -96,6 +97,4 @@ __global__ void __launch_bounds__((BM*BN) / (TM*TN), 1) sgemm_vectorized_loads(
                 )[0] = tmp;
             }
         }
- 
-    }
 }
