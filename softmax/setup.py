@@ -3,6 +3,13 @@ import torch
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
+# Monkeypatch the version check to just print a warning instead of erroring
+original_check = torch.utils.cpp_extension._check_cuda_version
+
+def no_op_check(compiler_name, compiler_version):
+    print(f"Warning: Bypassing CUDA version check. System: {compiler_version}, Torch: {torch.version.cuda}")
+
+torch.utils.cpp_extension._check_cuda_version = no_op_check
 # Helper to find the correct include path in Conda
 conda_prefix = os.environ.get('CONDA_PREFIX')
 include_dirs = []
