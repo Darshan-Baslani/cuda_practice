@@ -1,8 +1,17 @@
+from numpy import tri
 import torch
 import softmax_cpp
-import time
 import pandas as pd
+import triton
+import triton.testing
 
+# @triton.testing.perf_report(
+#         triton.testing.Benchmark(
+#             x_names=['size'],
+#
+#             )
+#         )
+#
 device = torch.device("cuda")
 rows, cols = 1024, 32768
 print(f"Benchmarking Softmax on {rows}x{cols} matrix (float32")
